@@ -23,7 +23,7 @@ body.editing #document{display:none}body.editing #editor{display:block}
 #document code{font-family:ui-monospace,SFMono-Regular,monospace;background:var(--code);padding:.12em .3em;border-radius:4px}
 #document pre code{padding:0;background:none}
 #document img{max-width:100%;height:auto}#document table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}
-#document th,#document td{border:1px solid var(--line);padding:.45em .75em}#document hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+#document th,#document td{border:1px solid var(--line);padding:.45em .75em}#document th{background:var(--code);font-weight:650}#document tbody tr:nth-child(even){background:color-mix(in srgb,var(--code) 45%,transparent)}#document hr{border:0;border-top:1px solid var(--line);margin:2em 0}
 #controls{position:fixed;top:14px;right:14px;display:flex;gap:8px;opacity:.18;transition:opacity .2s}
 #controls:hover,#controls:focus-within{opacity:1}
 #controls button{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:var(--code);color:var(--fg);font-size:17px;cursor:pointer}
@@ -62,21 +62,64 @@ function inlineMarkdown(value){
  text=text.replace(/~~(.+?)~~/g,'<del>$1</del>');
  return text.replace(/%%CODE(\d+)%%/g,(_,index)=>code[Number(index)]);
 }
+function splitTableRow(row){
+ const trimmed=row.trim();
+ const cells=[];
+ let cell='',escaped=false;
+ for(const character of trimmed){
+  if(character==='|'&&!escaped){cells.push(cell.trim());cell='';continue;}
+  cell+=character;
+  if(character==='\\'&&!escaped)escaped=true;
+  else escaped=false;
+ }
+ cells.push(cell.trim());
+ if(trimmed.startsWith('|'))cells.shift();
+ if(trimmed.endsWith('|')){
+  let slashes=0;
+  for(let index=trimmed.length-2;index>=0&&trimmed[index]==='\\';index--)slashes++;
+  if(slashes%2===0)cells.pop();
+ }
+ return cells.map(value=>value.replace(/\\\|/g,'|'));
+}
+function isTableDelimiter(row){
+ const cells=splitTableRow(row);
+ return cells.length>0&&cells.every(cell=>/^:?-{3,}:?$/.test(cell.replace(/\s/g,'')));
+}
 function renderMarkdown(markdown){
  const output=[];
  const lines=markdown.replace(/\r/g,'').split('\n');
  let paragraph=[],listType='',inCode=false,codeLines=[];
+ const codeFence=new RegExp('^\\s*[\\x60]{3}');
  const flushParagraph=()=>{if(paragraph.length){output.push('<p>'+inlineMarkdown(paragraph.join(' '))+'</p>');paragraph=[];}};
  const closeList=()=>{if(listType){output.push('</'+listType+'>');listType='';}};
  const flushBlocks=()=>{flushParagraph();closeList();};
- for(const line of lines){
+ for(let lineIndex=0;lineIndex<lines.length;lineIndex++){
+  const line=lines[lineIndex];
   if(inCode){
-   if(/^\s*```/.test(line)){output.push('<pre><code>'+escapeHTML(codeLines.join('\n'))+'</code></pre>');codeLines=[];inCode=false;}
+   if(codeFence.test(line)){output.push('<pre><code>'+escapeHTML(codeLines.join('\n'))+'</code></pre>');codeLines=[];inCode=false;}
    else codeLines.push(line);
    continue;
   }
-  if(/^\s*```/.test(line)){flushBlocks();inCode=true;continue;}
+  if(codeFence.test(line)){flushBlocks();inCode=true;continue;}
   if(!line.trim()){flushBlocks();continue;}
+  if(lineIndex+1<lines.length&&line.includes('|')&&isTableDelimiter(lines[lineIndex+1])){
+   const headers=splitTableRow(line);
+   const separators=splitTableRow(lines[lineIndex+1]);
+   if(headers.length&&headers.length===separators.length){
+    flushBlocks();
+    const alignments=separators.map(cell=>cell.startsWith(':')?(cell.endsWith(':')?'center':'left'):(cell.endsWith(':')?'right':'left'));
+    const renderCells=(cells,tag)=>'<tr>'+headers.map((_,index)=>'<'+tag+' style="text-align:'+alignments[index]+'">'+inlineMarkdown(cells[index]??'')+'</'+tag+'>').join('')+'</tr>';
+    output.push('<table><thead>'+renderCells(headers,'th')+'</thead><tbody>');
+    let rowIndex=lineIndex+2;
+    while(rowIndex<lines.length&&lines[rowIndex].trim()&&lines[rowIndex].includes('|')){
+     output.push(renderCells(splitTableRow(lines[rowIndex]),'td'));
+     rowIndex++;
+    }
+    output.push('</tbody></table>');
+    lineIndex=rowIndex-1;
+    continue;
+   }
+  }
   const heading=line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*$/);
   if(heading){flushBlocks();const level=heading[1].length;output.push('<h'+level+'>'+inlineMarkdown(heading[2])+'</h'+level+'>');continue;}
   if(/^\s{0,3}(---+|___+|\*\*\*+)\s*$/.test(line)){flushBlocks();output.push('<hr>');continue;}
