@@ -141,8 +141,18 @@ function renderMarkdown(markdown){
  flushBlocks();
  return output.join('\n');
 }
-function showMarkdown(text){markdownSource=text;editor.value=text;documentView.innerHTML=renderMarkdown(text);}
-function setMode(nextEditing){editing=nextEditing;document.body.classList.toggle('editing',editing);modeButton.textContent=editing?'▤':'✎';modeButton.title=editing?'Visualizar HTML':'Editar Markdown';modeButton.setAttribute('aria-label',modeButton.title);if(editing)editor.focus();else{markdownSource=editor.value;documentView.innerHTML=renderMarkdown(markdownSource);}}
+const STORAGE_KEY='markdown-last-document';
+function saveMarkdown(text){
+ try{localStorage.setItem(STORAGE_KEY,text);}catch(error){console.warn('Não foi possível salvar o Markdown no navegador:',error);}
+}
+function restoreMarkdown(){
+ try{
+  const saved=localStorage.getItem(STORAGE_KEY);
+  if(saved!==null)showMarkdown(saved);
+ }catch(error){console.warn('Não foi possível recuperar o último Markdown:',error);}
+}
+function showMarkdown(text){markdownSource=text;editor.value=text;documentView.innerHTML=renderMarkdown(text);saveMarkdown(text);}
+function setMode(nextEditing){editing=nextEditing;document.body.classList.toggle('editing',editing);modeButton.textContent=editing?'▤':'✎';modeButton.title=editing?'Visualizar HTML':'Editar Markdown';modeButton.setAttribute('aria-label',modeButton.title);if(editing)editor.focus();else{markdownSource=editor.value;documentView.innerHTML=renderMarkdown(markdownSource);saveMarkdown(markdownSource);}}
 function openFile(file){
  if(!file)return;
  if(!/\.(md|markdown|txt)$/i.test(file.name))return;
@@ -152,8 +162,9 @@ function openFile(file){
 }
 document.querySelector('#open').addEventListener('click',()=>fileInput.click());
 modeButton.addEventListener('click',()=>setMode(!editing));
-editor.addEventListener('input',()=>{markdownSource=editor.value;});
+editor.addEventListener('input',()=>{markdownSource=editor.value;saveMarkdown(markdownSource);});
 fileInput.addEventListener('change',event=>openFile(event.target.files[0]));
+restoreMarkdown();
 document.querySelector('#theme').addEventListener('click',()=>{
  document.body.classList.toggle('light');
  const light=document.body.classList.contains('light');
