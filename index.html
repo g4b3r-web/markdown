@@ -43,7 +43,11 @@ body.editing #document{display:none}body.editing #editor{display:block}
 <script>
 const documentView=document.querySelector('#document');
 const fileInput=document.querySelector('#file');
-const themeButton=document.querySelector('#theme');\nconst editor=document.querySelector('#editor');\nconst modeButton=document.querySelector('#mode');\nlet markdownSource='';\nlet editing=false;
+const themeButton=document.querySelector('#theme');
+const editor=document.querySelector('#editor');
+const modeButton=document.querySelector('#mode');
+let markdownSource='';
+let editing=false;
 
 function escapeHTML(value){
  return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");
@@ -94,7 +98,8 @@ function renderMarkdown(markdown){
  flushBlocks();
  return output.join('\n');
 }
-function showMarkdown(text){markdownSource=text;editor.value=text;documentView.innerHTML=renderMarkdown(text);}\nfunction setMode(nextEditing){editing=nextEditing;document.body.classList.toggle('editing',editing);modeButton.textContent=editing?'▤':'✎';modeButton.title=editing?'Visualizar HTML':'Editar Markdown';modeButton.setAttribute('aria-label',modeButton.title);if(editing)editor.focus();else{markdownSource=editor.value;documentView.innerHTML=renderMarkdown(markdownSource);}}
+function showMarkdown(text){markdownSource=text;editor.value=text;documentView.innerHTML=renderMarkdown(text);}
+function setMode(nextEditing){editing=nextEditing;document.body.classList.toggle('editing',editing);modeButton.textContent=editing?'▤':'✎';modeButton.title=editing?'Visualizar HTML':'Editar Markdown';modeButton.setAttribute('aria-label',modeButton.title);if(editing)editor.focus();else{markdownSource=editor.value;documentView.innerHTML=renderMarkdown(markdownSource);}}
 function openFile(file){
  if(!file)return;
  if(!/\.(md|markdown|txt)$/i.test(file.name))return;
@@ -102,7 +107,9 @@ function openFile(file){
  reader.onload=()=>showMarkdown(String(reader.result||''));
  reader.readAsText(file);
 }
-document.querySelector('#open').addEventListener('click',()=>fileInput.click());\nmodeButton.addEventListener('click',()=>setMode(!editing));\neditor.addEventListener('input',()=>{markdownSource=editor.value;});
+document.querySelector('#open').addEventListener('click',()=>fileInput.click());
+modeButton.addEventListener('click',()=>setMode(!editing));
+editor.addEventListener('input',()=>{markdownSource=editor.value;});
 fileInput.addEventListener('change',event=>openFile(event.target.files[0]));
 document.querySelector('#theme').addEventListener('click',()=>{
  document.body.classList.toggle('light');
