@@ -13,6 +13,8 @@ body{--bg:#080808;--fg:#ededed;--muted:#aaa;--line:#303030;--code:#171717;--link
 body.light{color-scheme:light;--bg:#fff;--fg:#202124;--muted:#666;--line:#ddd;--code:#f2f2f2;--link:#145dcc}
 #document{width:100%;min-height:100vh;padding:clamp(22px,5vw,72px);font-size:16px;line-height:1.75;overflow-wrap:anywhere}
 #document:empty{display:none}
+#editor{display:none;width:100%;min-height:100vh;padding:clamp(22px,5vw,72px);resize:none;border:0;outline:0;background:var(--bg);color:var(--fg);font:15px/1.7 ui-monospace,SFMono-Regular,monospace;tab-size:2}
+body.editing #document{display:none}body.editing #editor{display:block}
 #document h1,#document h2,#document h3,#document h4,#document h5,#document h6{line-height:1.25;letter-spacing:-.035em;margin:1.5em 0 .65em}
 #document h1{font-size:2.35em}#document h2{font-size:1.8em}#document h3{font-size:1.4em}
 #document p{margin:0 0 1.1em}#document a{color:var(--link)}
@@ -30,16 +32,16 @@ body.light{color-scheme:light;--bg:#fff;--fg:#202124;--muted:#666;--line:#ddd;--
 </style>
 </head>
 <body>
-<main id="document" aria-live="polite"></main>
+<main id="document" aria-live="polite"></main>\n<textarea id="editor" spellcheck="false" aria-label="Editar Markdown" placeholder="Digite ou cole seu Markdown aqui..."></textarea>
 <nav id="controls" aria-label="Controles">
 <button id="open" type="button" title="Abrir arquivo Markdown" aria-label="Abrir arquivo Markdown">↥</button>
-<button id="theme" type="button" title="Alternar tema Black/Light" aria-label="Alternar tema">◐</button>
+<button id="mode" type="button" title="Editar Markdown" aria-label="Alternar entre visualizar e editar">✎</button>\n<button id="theme" type="button" title="Alternar tema Black/Light" aria-label="Alternar tema">◐</button>
 </nav>
 <input id="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain">
 <script>
 const documentView=document.querySelector('#document');
 const fileInput=document.querySelector('#file');
-const themeButton=document.querySelector('#theme');
+const themeButton=document.querySelector('#theme');\nconst editor=document.querySelector('#editor');\nconst modeButton=document.querySelector('#mode');\nlet markdownSource='';\nlet editing=false;
 
 function escapeHTML(value){
  return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");
@@ -90,7 +92,7 @@ function renderMarkdown(markdown){
  flushBlocks();
  return output.join('\n');
 }
-function showMarkdown(text){documentView.innerHTML=renderMarkdown(text);}
+function showMarkdown(text){markdownSource=text;editor.value=text;documentView.innerHTML=renderMarkdown(text);}\nfunction setMode(nextEditing){editing=nextEditing;document.body.classList.toggle('editing',editing);modeButton.textContent=editing?'▤':'✎';modeButton.title=editing?'Visualizar HTML':'Editar Markdown';modeButton.setAttribute('aria-label',modeButton.title);if(editing)editor.focus();else{markdownSource=editor.value;documentView.innerHTML=renderMarkdown(markdownSource);}}
 function openFile(file){
  if(!file)return;
  if(!/\.(md|markdown|txt)$/i.test(file.name))return;
@@ -98,7 +100,7 @@ function openFile(file){
  reader.onload=()=>showMarkdown(String(reader.result||''));
  reader.readAsText(file);
 }
-document.querySelector('#open').addEventListener('click',()=>fileInput.click());
+document.querySelector('#open').addEventListener('click',()=>fileInput.click());\nmodeButton.addEventListener('click',()=>setMode(!editing));\neditor.addEventListener('input',()=>{markdownSource=editor.value;});
 fileInput.addEventListener('change',event=>openFile(event.target.files[0]));
 document.querySelector('#theme').addEventListener('click',()=>{
  document.body.classList.toggle('light');
@@ -113,7 +115,7 @@ document.addEventListener('dragover',event=>event.preventDefault());
 document.addEventListener('drop',event=>{event.preventDefault();openFile(event.dataTransfer.files[0]);});
 document.addEventListener('paste',event=>{
  const text=event.clipboardData?.getData('text/plain');
- if(text&&text.trim()){event.preventDefault();showMarkdown(text);}
+ if(text&&text.trim()){event.preventDefault();showMarkdown(text);if(editing)editor.value=text;}
 });
 </script>
 </body>
