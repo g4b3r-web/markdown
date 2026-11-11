@@ -1,51 +1,120 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Visualizador Markdown com editor, arrastar e soltar e exportação HTML.">
-<title>Markdown Studio</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>Markdown</title>
 <style>
-:root{color-scheme:light dark;font-family:system-ui,sans-serif;background:#f3f5fb;color:#172033}
-*{box-sizing:border-box}body{margin:0;background:#f3f5fb;color:#172033}.top{display:flex;justify-content:space-between;align-items:center;padding:18px 4vw;background:#3157d5;color:white}.brand{font-size:21px;font-weight:800}.actions{display:flex;gap:9px;flex-wrap:wrap}button,.pick{border:1px solid #dce2f0;border-radius:9px;padding:10px 13px;background:white;color:#172033;font-weight:650;cursor:pointer}.top button{background:#ffffff20;color:white;border-color:#ffffff70}main{max-width:1500px;margin:auto;padding:34px 4vw}.intro{margin-bottom:22px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;color:#3157d5;text-transform:uppercase}h1{font-size:32px;letter-spacing:-.04em;margin:8px 0}.sub{color:#68738a;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.panel{background:white;border:1px solid #e1e6f0;border-radius:15px;overflow:hidden;box-shadow:0 14px 38px #1a274d12;min-width:0}.head{padding:14px 17px;border-bottom:1px solid #e1e6f0;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:750}.tools{display:flex;gap:7px}.tools button{font-size:11px;padding:7px 10px}textarea{display:block;width:100%;min-height:590px;resize:vertical;border:0;outline:0;padding:22px;font:13px/1.8 ui-monospace,monospace;color:#172033;background:white}.preview{min-height:590px;max-height:760px;overflow:auto;padding:26px 30px;line-height:1.8;font-size:14px;overflow-wrap:anywhere}.preview h1,.preview h2,.preview h3{line-height:1.25;letter-spacing:-.03em}.preview h1,.preview h2{border-bottom:1px solid #e1e6f0;padding-bottom:9px}.preview a{color:#3157d5}.preview blockquote{border-left:3px solid #3157d5;padding-left:15px;color:#68738a}.preview pre{background:#f0f3fa;padding:15px;border-radius:9px;overflow:auto}.preview code{font-family:ui-monospace,monospace;background:#f0f3fa;padding:2px 4px;border-radius:4px}.preview pre code{background:none}.preview img{max-width:100%}.foot{padding:10px 16px;border-top:1px solid #e1e6f0;color:#68738a;font-size:11px;display:flex;justify-content:space-between}.drop{outline:3px dashed #3157d5;outline-offset:-8px;background:#e9edff}#file{display:none}.status{color:#68738a;font-size:12px;margin-top:12px}
-@media(max-width:850px){.grid{grid-template-columns:1fr}textarea,.preview{min-height:380px}.top{align-items:flex-start;flex-direction:column;gap:12px}}@media(max-width:520px){main{padding:24px 14px}.head{align-items:flex-start;flex-direction:column}.actions{width:100%}.actions>*{flex:1;text-align:center}}
-</style></head>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark;background:#080808;color:#eee}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;width:100%;background:var(--bg);color:var(--fg)}
+body{--bg:#080808;--fg:#ededed;--muted:#aaa;--line:#303030;--code:#171717;--link:#8ab4ff;transition:background .2s,color .2s}
+body.light{color-scheme:light;--bg:#fff;--fg:#202124;--muted:#666;--line:#ddd;--code:#f2f2f2;--link:#145dcc}
+#document{width:100%;min-height:100vh;padding:clamp(22px,5vw,72px);font-size:16px;line-height:1.75;overflow-wrap:anywhere}
+#document:empty{display:none}
+#document h1,#document h2,#document h3,#document h4,#document h5,#document h6{line-height:1.25;letter-spacing:-.035em;margin:1.5em 0 .65em}
+#document h1{font-size:2.35em}#document h2{font-size:1.8em}#document h3{font-size:1.4em}
+#document p{margin:0 0 1.1em}#document a{color:var(--link)}
+#document blockquote{margin:1.2em 0;padding:.15em 1em;border-left:3px solid var(--muted);color:var(--muted)}
+#document pre{padding:1em;overflow:auto;background:var(--code);border:1px solid var(--line);border-radius:8px}
+#document code{font-family:ui-monospace,SFMono-Regular,monospace;background:var(--code);padding:.12em .3em;border-radius:4px}
+#document pre code{padding:0;background:none}
+#document img{max-width:100%;height:auto}#document table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}
+#document th,#document td{border:1px solid var(--line);padding:.45em .75em}#document hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+#controls{position:fixed;top:14px;right:14px;display:flex;gap:8px;opacity:.18;transition:opacity .2s}
+#controls:hover,#controls:focus-within{opacity:1}
+#controls button{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;background:var(--code);color:var(--fg);font-size:17px;cursor:pointer}
+#file{display:none}
+@media(max-width:600px){#document{padding:58px 20px 28px;font-size:15px}#document h1{font-size:2em}}
+</style>
+</head>
 <body>
-<header class="top"><div class="brand">M↓ Markdown Studio</div><div class="actions"><label class="pick" for="file">＋ Abrir .md</label><button id="export">Exportar HTML</button></div></header>
-<main><section class="intro"><div class="eyebrow">Markdown → HTML</div><h1>Seu texto, visualizado.</h1><div class="sub">Arraste um arquivo Markdown, escreva ou cole seu texto. A prévia atualiza enquanto você digita.</div><div class="status" id="status">Processamento local · pronto para começar</div></section>
-<section class="grid"><article class="panel" id="editorPanel"><div class="head"><span>✎ Editor Markdown</span><div class="tools"><button id="example">Exemplo</button><button id="clear">Limpar</button></div></div><textarea id="source" spellcheck="false" aria-label="Editor Markdown"></textarea><div class="foot"><span id="filename">documento.md</span><span id="stats">0 palavras · 0 caracteres</span></div></article>
-<article class="panel"><div class="head"><span>Pré-visualização HTML</span><div class="tools"><button id="copy">Copiar HTML</button></div></div><div class="preview" id="preview"></div><div class="foot"><span>Renderização em tempo real</span><span>HTML bruto não é executado</span></div></article></section><input id="file" type="file" accept=".md,.markdown,.txt"></main>
+<main id="document" aria-live="polite"></main>
+<nav id="controls" aria-label="Controles">
+<button id="open" type="button" title="Abrir arquivo Markdown" aria-label="Abrir arquivo Markdown">↥</button>
+<button id="theme" type="button" title="Alternar tema Black/Light" aria-label="Alternar tema">◐</button>
+</nav>
+<input id="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain">
 <script>
-const example=`# Bem-vindo ao Markdown Studio
+const documentView=document.querySelector('#document');
+const fileInput=document.querySelector('#file');
+const themeButton=document.querySelector('#theme');
 
-Transforme **Markdown em HTML** com uma prévia instantânea.
-
-## O que você pode fazer
-- Arrastar arquivos \`.md\` para o editor
-- Editar e acompanhar o resultado
-- Exportar o resultado como HTML
-
-### Código
-\`\`\`js
-const greeting = "Olá, Markdown!";
-console.log(greeting);
-\`\`\`
-
-> A simplicidade é a alma da eficiência.
-
-[Conheça o Markdown](https://www.markdownguide.org/)
-
----
-
-**Dica:** experimente títulos, listas, links e blocos de código.`;
-const src=document.querySelector('#source'),out=document.querySelector('#preview'),status=document.querySelector('#status');let filename='documento.md';
-function esc(s){return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;")}
-function inline(s){let codes=[];s=esc(s).replace(/`([^`]+)`/g,(_,x)=>{codes.push('<code>'+x+'</code>');return '@@'+(codes.length-1)+'@@'});s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/~~(.+?)~~/g,'<del>$1</del>');return s.replace(/@@(\d+)@@/g,(_,i)=>codes[+i])}
-function render(md){let o=[],p=[],list='',code=false,b=[];function flush(){if(p.length){o.push('<p>'+inline(p.join(' '))+'</p>');p=[]}}function close(){flush();if(list){o.push('</'+list+'>');list=''}}for(const l of md.replace(/\r/g,'').split('\n')){if(code){if(/^\s*\`\`\`/.test(l)){o.push('<pre><code>'+esc(b.join('\n'))+'</code></pre>');b=[];code=false}else b.push(l);continue}if(/^\s*\`\`\`/.test(l)){close();code=true;continue}if(!l.trim()){close();continue}let h=l.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*$/);if(h){close();let n=h[1].length;o.push('<h'+n+'>'+inline(h[2])+'</h'+n+'>');continue}if(/^\s{0,3}(---+|___+|\*\*\*+)\s*$/.test(l)){close();o.push('<hr>');continue}let q=l.match(/^\s{0,3}>\s?(.*)$/);if(q){close();o.push('<blockquote>'+inline(q[1])+'</blockquote>');continue}let li=l.match(/^\s*(?:[-+*]|\d+\.)\s+(.+)$/);if(li){flush();let t=/^\s*\d+\./.test(l)?'ol':'ul';if(list&&list!==t)close();if(!list){list=t;o.push('<'+t+'>')}o.push('<li>'+inline(li[1])+'</li>');continue}if(list){o.push('</'+list+'>');list=''}p.push(l.trim())}if(code)o.push('<pre><code>'+esc(b.join('\n'))+'</code></pre>');close();return o.join('\n')}
-function update(){out.innerHTML=src.value.trim()?render(src.value):'<p style="color:#68738a">Sua prévia aparecerá aqui.</p>';let n=src.value.trim()?src.value.trim().split(/\s+/).length:0;document.querySelector('#stats').textContent=n+' palavras · '+src.value.length+' caracteres';status.textContent='Prévia atualizada · processamento local'}
-src.addEventListener('input',update);document.querySelector('#example').onclick=()=>{src.value=example;filename='exemplo.md';document.querySelector('#filename').textContent=filename;update()};document.querySelector('#clear').onclick=()=>{src.value='';update()};document.querySelector('#file').onchange=e=>load(e.target.files[0]);
-function load(f){if(!f)return;if(!/\.(md|markdown|txt)$/i.test(f.name)){status.textContent='Formato inválido: escolha .md ou .markdown';return}let r=new FileReader();r.onload=()=>{src.value=r.result;filename=f.name;document.querySelector('#filename').textContent=filename;update();status.textContent='Arquivo carregado: '+f.name};r.readAsText(f)}
-const panel=document.querySelector('#editorPanel');['dragenter','dragover'].forEach(n=>panel.addEventListener(n,e=>{e.preventDefault();panel.classList.add('drop')}));['dragleave','drop'].forEach(n=>panel.addEventListener(n,e=>{e.preventDefault();panel.classList.remove('drop')}));panel.addEventListener('drop',e=>load(e.dataTransfer.files[0]));document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{if(!panel.contains(e.target)){e.preventDefault();load(e.dataTransfer.files[0])}});
-document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(render(src.value));status.textContent='HTML copiado.'}catch{status.textContent='Não foi possível copiar.'}};
-document.querySelector('#export').onclick=()=>{let title=filename.replace(/\.(md|markdown|txt)$/i,'');let html='<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>'+esc(title)+'</title><style>body{max-width:850px;margin:48px auto;padding:0 22px;font:16px/1.75 system-ui}pre{padding:16px;background:#f0f2f7;overflow:auto}</style><body>'+render(src.value)+'</body></html>';let u=URL.createObjectURL(new Blob([html],{type:'text/html'})),a=document.createElement('a');a.href=u;a.download=title+'.html';a.click();URL.revokeObjectURL(u)};
-src.value=example;update();
-</script></body></html>
+function escapeHTML(value){
+ return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");
+}
+function inlineMarkdown(value){
+ const code=[];
+ let text=escapeHTML(value);
+ text=text.replace(/`([^`]+)`/g,(_,part)=>{code.push('<code>'+part+'</code>');return '%%CODE'+(code.length-1)+'%%';});
+ text=text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+ text=text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+ text=text.replace(/\*(.+?)\*/g,'<em>$1</em>');
+ text=text.replace(/~~(.+?)~~/g,'<del>$1</del>');
+ return text.replace(/%%CODE(\d+)%%/g,(_,index)=>code[Number(index)]);
+}
+function renderMarkdown(markdown){
+ const output=[];
+ const lines=markdown.replace(/\r/g,'').split('\n');
+ let paragraph=[],listType='',inCode=false,codeLines=[];
+ const flushParagraph=()=>{if(paragraph.length){output.push('<p>'+inlineMarkdown(paragraph.join(' '))+'</p>');paragraph=[];}};
+ const closeList=()=>{if(listType){output.push('</'+listType+'>');listType='';}};
+ const flushBlocks=()=>{flushParagraph();closeList();};
+ for(const line of lines){
+  if(inCode){
+   if(/^\s*```/.test(line)){output.push('<pre><code>'+escapeHTML(codeLines.join('\n'))+'</code></pre>');codeLines=[];inCode=false;}
+   else codeLines.push(line);
+   continue;
+  }
+  if(/^\s*```/.test(line)){flushBlocks();inCode=true;continue;}
+  if(!line.trim()){flushBlocks();continue;}
+  const heading=line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*#*$/);
+  if(heading){flushBlocks();const level=heading[1].length;output.push('<h'+level+'>'+inlineMarkdown(heading[2])+'</h'+level+'>');continue;}
+  if(/^\s{0,3}(---+|___+|\*\*\*+)\s*$/.test(line)){flushBlocks();output.push('<hr>');continue;}
+  const quote=line.match(/^\s{0,3}>\s?(.*)$/);
+  if(quote){flushBlocks();output.push('<blockquote>'+inlineMarkdown(quote[1])+'</blockquote>');continue;}
+  const item=line.match(/^\s*(?:[-+*]|\d+\.)\s+(.+)$/);
+  if(item){
+   flushParagraph();
+   const nextType=/^\s*\d+\./.test(line)?'ol':'ul';
+   if(listType&&listType!==nextType)closeList();
+   if(!listType){listType=nextType;output.push('<'+listType+'>');}
+   output.push('<li>'+inlineMarkdown(item[1])+'</li>');
+   continue;
+  }
+  closeList();
+  paragraph.push(line.trim());
+ }
+ if(inCode)output.push('<pre><code>'+escapeHTML(codeLines.join('\n'))+'</code></pre>');
+ flushBlocks();
+ return output.join('\n');
+}
+function showMarkdown(text){documentView.innerHTML=renderMarkdown(text);}
+function openFile(file){
+ if(!file)return;
+ if(!/\.(md|markdown|txt)$/i.test(file.name))return;
+ const reader=new FileReader();
+ reader.onload=()=>showMarkdown(String(reader.result||''));
+ reader.readAsText(file);
+}
+document.querySelector('#open').addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',event=>openFile(event.target.files[0]));
+document.querySelector('#theme').addEventListener('click',()=>{
+ document.body.classList.toggle('light');
+ const light=document.body.classList.contains('light');
+ themeButton.textContent=light?'☾':'☀';
+ themeButton.title=light?'Tema Black':'Tema Light';
+ document.querySelector('meta[name="theme-color"]').content=light?'#ffffff':'#080808';
+ try{localStorage.setItem('markdown-theme',light?'light':'black');}catch{}
+});
+try{if(localStorage.getItem('markdown-theme')==='light'){document.body.classList.add('light');themeButton.textContent='☾';}}catch{}
+document.addEventListener('dragover',event=>event.preventDefault());
+document.addEventListener('drop',event=>{event.preventDefault();openFile(event.dataTransfer.files[0]);});
+document.addEventListener('paste',event=>{
+ const text=event.clipboardData?.getData('text/plain');
+ if(text&&text.trim()){event.preventDefault();showMarkdown(text);}
+});
+</script>
+</body>
+</html>
